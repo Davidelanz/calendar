@@ -22,7 +22,7 @@
     }
 
     header form {
-      max-width: 400px;
+      max-width: 500px;
     }
 
     .calendar .month {
@@ -106,11 +106,11 @@
 <body>
   <header class="mb-4 shadow-sm pb-4">
     <form class="row g-3 align-items-end m-auto">
-      <div class="col-auto">
+      <div class="col-4">
         <label for="year" class="form-label">Year</label>
         <input type="number" class="form-control" id="year" value="2025" min="1900" max="2100">
       </div>
-      <div class="col-auto">
+      <div class="col-5">
         <label for="country" class="form-label">Country</label>
         <select class="form-select" id="country">
           <option value="DE">Germany</option>
@@ -121,8 +121,8 @@
           <option value="US">United States</option>
         </select>
       </div>
-      <div class="col-auto">
-        <button class="form-control w-auto" onclick="window.print();">Print</button>
+      <div class="col-3">
+        <button class="form-control" onclick="window.print();">Print</button>
       </div>
     </form>
   </header>
