@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Just a Simple Calendar</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- Custom CSS-->
+  <style>
+    :root {
+      font-size: 18px;
+    }
+
+    .calendar .month {
+      margin-bottom: 2rem;
+    }
+
+    .month h3 {
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th,
+    td {
+      font-size: 0.7rem;
+      width: 4rem;
+      height: 3rem;
+      text-align: left;
+      vertical-align: top;
+      border: 1px solid #dee2e6;
+    }
+
+    .holiday {
+      background-color: #ffdbdea7 !important;
+    }
+
+    .holiday-notes {
+      font-size: 0.875rem;
+      margin-top: 1rem;
+      padding-top: 0.5rem;
+      border-top: 1px dashed #82868a;
+    }
+
+    .holiday-notes ul {
+      margin-bottom: 0;
+      padding-left: 1rem;
+    }
+
+    @media print {
+      :root {
+        font-size: 10px;
+      }
+
+      body {
+        color: black;
+      }
+
+      .container {
+        all: unset;
+      }
+
+      .calendar {
+        display: block;
+      }
+
+      .calendar-page {
+        page-break-after: always;
+      }
+
+      .calendar .month {
+        display: inline-block;
+        vertical-align: top;
+        width: 40%;
+        margin: 5%;
+        page-break-inside: avoid;
+        margin-bottom: 0;
+      }
+
+      header,
+      form {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container py-4">
+    <header class="mb-4">
+      <form class="row g-3 align-items-center">
+        <div class="col-auto">
+          <label for="year" class="form-label">Year</label>
+          <input type="number" class="form-control" id="year" value="2025" min="1900" max="2100">
+        </div>
+        <div class="col-auto">
+          <label for="country" class="form-label">Country</label>
+          <select class="form-select" id="country">
+            <option value="DE">Germany</option>
+            <option value="IT">Italy</option>
+            <option value="FR">France</option>
+            <option value="ES">Spain</option>
+            <option value="GB">United Kingdom</option>
+            <option value="US">United States</option>
+          </select>
+        </div>
+        <div class="col-auto">
+          <label class="form-label">&nbsp;</label>
+          <button class="form-control" onclick="window.print();">Print Calendar</button>
+        </div>
+      </form>
+    </header>
+
+    <div id="calendar" class="calendar"></div>
+  </div>
+
+  <script>
+    // Get references to DOM elements
+    const calendarEl = document.getElementById('calendar'); // Container where calendar will be injected
+    const yearInput = document.getElementById('year'); // Input field for selecting year
+    const countrySelect = document.getElementById('country'); // Dropdown for selecting country
+
+    // Define the weekday labels used in the table headers
+    const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+    // Full names of each month, used for labeling
+    const monthNames = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+
+    /**
+     * Main function to generate the calendar HTML dynamically.
+     * @param {number} year - The year for the calendar
+     * @param {Array} holidays - An array of holiday objects from the API
+     */
+    function generateCalendar(year, holidays = []) {
+      calendarEl.innerHTML = ''; // Clear any existing calendar
+
+      // The calendar is split into two vertical "pages", 6 months each
+      for (let i = 0; i < 2; i++) {
+        const pageDiv = document.createElement('div'); // Wrapper for 6 months
+        pageDiv.className = 'calendar-page row';
+
+        for (let j = 0; j < 6; j++) {
+          const month = i * 6 + j; // Calculate actual month index (0-11)
+          const firstDay = new Date(year, month, 1); // First day of the month
+          const lastDay = new Date(year, month + 1, 0); // Last day of the month
+
+          // Create a container for the individual month
+          const monthCol = document.createElement('div');
+          monthCol.className = 'col-md-6 month';
+
+          // Month heading (e.g., "January")
+          const monthHeader = document.createElement('h3');
+          monthHeader.textContent = monthNames[month];
+          monthCol.appendChild(monthHeader);
+
+          // Create the calendar table for this month
+          const table = document.createElement('table');
+          table.className = 'table table-bordered table-sm';
+
+          // Table header row with weekday names
+          const thead = document.createElement('thead');
+          const headerRow = document.createElement('tr');
+          weekdays.forEach(day => {
+            const th = document.createElement('th');
+            th.textContent = day;
+            headerRow.appendChild(th);
+          });
+          thead.appendChild(headerRow);
+          table.appendChild(thead);
+
+          // Generate the day cells
+          const tbody = document.createElement('tbody');
+          let row = document.createElement('tr');
+
+          // Adjust JS Sunday-based index (0 = Sun) to Monday start (0 = Mon)
+          let startDay = (firstDay.getDay() + 6) % 7;
+
+          // Insert empty cells before the first of the month
+          for (let i = 0; i < startDay; i++) {
+            row.appendChild(document.createElement('td'));
+          }
+
+          // Loop through each day of the month
+          for (let day = 1; day <= lastDay.getDate(); day++) {
+            const date = new Date(year, month, day); // Current date object
+            const dateStr = date.toLocaleDateString('sv-SE'); // Format: YYYY-MM-DD
+
+            const td = document.createElement('td');
+            td.textContent = day;
+
+            // Highlight cell if the day is a holiday
+            const holiday = holidays.find(h => h.date === dateStr);
+            if (holiday) {
+              td.classList.add('holiday'); // Apply special styling
+              td.title = holiday.localName; // Tooltip for holiday name
+            }
+
+            row.appendChild(td);
+
+            // If it's Sunday (end of week), start a new row
+            const dayIndex = (date.getDay() + 6) % 7;
+            if (dayIndex === 6) {
+              tbody.appendChild(row);
+              row = document.createElement('tr');
+            }
+          }
+
+          // Fill in the last row with empty cells, if needed
+          if (row.children.length > 0) {
+            while (row.children.length < 7) {
+              row.appendChild(document.createElement('td'));
+            }
+            tbody.appendChild(row);
+          }
+
+          // Append the table body to the table
+          table.appendChild(tbody);
+          monthCol.appendChild(table);
+
+          // Generate the list of holidays shown under the calendar (optional for screen)
+          const monthHolidays = holidays.filter(h => {
+            const d = new Date(h.date);
+            return d.getMonth() === month && d.getFullYear() === year;
+          });
+
+          if (monthHolidays.length > 0) {
+            const notesDiv = document.createElement('div');
+            notesDiv.className = 'holiday-notes';
+
+            const ul = document.createElement('ul');
+            monthHolidays.forEach(h => {
+              const li = document.createElement('li');
+              li.textContent = `${h.date}: ${h.localName}`; // e.g., 2025-01-01: New Year's Day
+              ul.appendChild(li);
+            });
+
+            notesDiv.appendChild(ul);
+            monthCol.appendChild(notesDiv);
+          }
+
+          // Add the complete month column to the current page
+          pageDiv.appendChild(monthCol);
+        }
+
+        // Add the 6-month "page" to the calendar container
+        calendarEl.appendChild(pageDiv);
+      }
+    }
+
+    /**
+     * Fetches public holidays from the Nager.Date API
+     * @param {number} year - Year to query
+     * @param {string} country - Country code (e.g., 'DE' or 'IT')
+     * @returns {Promise<Array>} - Resolves to an array of holiday objects
+     */
+    async function fetchHolidays(year, country) {
+      try {
+        const response = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${year}/${country}`);
+        if (!response.ok) throw new Error('Failed to fetch holidays');
+        return await response.json(); // Array of { date, localName, ... }
+      } catch (err) {
+        console.error(err); // Log any errors
+        return []; // Return empty array if fetch fails
+      }
+    }
+
+    /**
+     * Updates the calendar whenever year or country changes.
+     * Grabs current input values, fetches holidays, and regenerates calendar.
+     */
+    async function updateCalendar() {
+      const year = parseInt(yearInput.value); // Get year from input
+      const country = countrySelect.value; // Get country code from dropdown
+      const holidays = await fetchHolidays(year, country); // Get holidays from API
+      generateCalendar(year, holidays); // Build calendar with holidays
+    }
+
+    // Event listeners to trigger updates when inputs change
+    yearInput.addEventListener('input', updateCalendar); // When user types in a new year
+    countrySelect.addEventListener('change', updateCalendar); // When user selects a new country
+
+    // Initial calendar render when page loads
+    updateCalendar();
+  </script>
+
+</body>
+
+</html>

@@ -7,3 +7,7 @@ I just needed a simple calendar that
 - has smart highlighting of holidays based on country.
 
 I guess that is all.
+
+### External resources
+
+- Using [Nager.Date API](https://date.nager.at/) to fetch public holidays.
